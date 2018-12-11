@@ -1,0 +1,193 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * Write your model definitions here
+ */
+
+namespace org.example.studoc
+
+//性别
+enum sex {
+  o female
+  o male
+}
+
+//学历类型：小学～博士
+enum schoolLevel {
+  o primarySch //小学
+  o middleSch //初中
+  o highSch //高中
+  o university //大学
+  o master //硕士
+  o phd //博士
+}
+
+enum docStatus{
+  o educating //在读
+  o graduate //毕业
+  o dropOut //辍学
+  o pause //休学
+  o graduateButHaveNotCert //毕业但是没有证书，即结业
+  o transfered //已转学出去
+}
+
+/** 
+参与者部分：
+分为三种身份登录，不同身份不同权限
+*/
+
+//学校是参与者，学生学籍在学校间流动
+//只有当前档案所在学校有权对学生档案进行编辑
+participant school identified by schoolID {
+  o String schoolID
+  o String schoolName
+  o String schoolAddress
+  o String schoolDescription
+  o userlogin login
+}
+
+//组织，学生可以指定组织能够查看学生档案
+participant organization identified by orgID {
+  o String orgID
+  o String orgName
+  o String orgDescription
+  o userlogin login
+}
+
+//学生用户,对应一个学生档案，学生有权查看自己的档案，并修改一部分个性化信息，还能够指定某组织查看自己的档案
+participant users identified by userID {
+  o String userID
+  o String userName
+  o String userDescription
+  o userlogin login
+}
+
+//用户登录的概念，用于三种参与者登录
+concept userlogin {
+  o String loginName
+  o String password
+}
+
+/** 
+学生档案部分：
+*/
+
+//学生总的档案信息，有个人信息部分和分档案，作为流动的对象
+asset student identified by identityCD {
+  o String identityCD
+  o String stuName //个人姓名
+  o sex stuSex //学生性别
+  o Integer age //学生年龄
+  o DateTime birthday //出生日期
+  o String imgUrl //个人照片
+  o docStatus stuStatu //学生现在的状态 毕业、结业
+  o schoolLevel optimalLevel //最高学历
+  --> school lastSchool //最后的学校，亦是最新的学校
+  --> stuDocument[] stuAllDocument //学生的所有档案
+  o String familyMessage //家庭信息
+  --> users owner //档案的持有用户
+
+}
+
+//学籍档案信息，主要记录一个阶段内学生的学籍状况
+asset stuDocument identified by docID {
+  o String docID
+  o String stuName //学生姓名
+  o String identityCD //身份证
+  o String stuID //学号
+  o schoolLevel level //学习阶段 初中、小学
+  o DateTime entranceTime //入学时间
+  o DateTime updateTime //档案更新时间  
+  --> school school //所在学校
+  o docStatus statu //该档案的状态
+}
+
+//学生受到的奖励
+asset reward identified by rewardID {
+  o String rewardID
+  o String rewardName
+  o String rewardMessage
+  o DateTime rewardDate
+}
+
+//学生受到的处罚
+asset punishment identified by punishmentID {
+  o String punishmentID
+  o String punishmentName
+  o String punishmentMessage
+  o DateTime punishmentDate
+}
+
+//学生获得的证书
+asset stuCert identified by certID {
+  o String certID
+  o String certName
+  o String certMessage
+  o DateTime certDate
+}
+
+
+//转学
+transaction transferSchool {
+  --> student stu
+  --> school newSchool
+  --> school oldSchool
+}
+/**
+ * 记录转学事件
+ */
+event transferEvent {
+  --> student stu
+  --> school oldSchool
+  --> school newSchool
+}
+
+//毕业 或者结业
+transaction graduate {
+  --> student stu
+  --> school fromSchool
+}
+
+//学生入学
+transaction entranceSchool {
+  o String detail
+}
+
+//退学
+transaction leaveSchool {
+  o String detail
+}
+
+//休学
+transaction pauseStudy {
+  o String detail
+}
+
+
+//创建档案
+transaction createStu {
+  o String detail
+}
+
+
+//毕业事件
+event graduateFromSch {
+  o String detail
+}
+
+//入学事件
+event admissionFrom {
+  o String detail
+}
